@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"strings"
 	"time"
+	"crypto/md5"
+	"encoding/hex"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/ec2metadata"
@@ -52,7 +54,7 @@ func (c *STSCredentialsGetter) Get(role string, sessionDuration time.Duration) (
 	if strings.HasPrefix(role, arnPrefix) {
 		roleARN = role
 	}
-	roleSessionName := normalizeRoleARN(roleARN) + "-session"
+	roleSessionName := hashRoleARN(roleARN)
 
 	params := &sts.AssumeRoleInput{
 		RoleArn:         aws.String(roleARN),
@@ -92,11 +94,7 @@ func GetBaseRoleARN(sess *session.Session) (string, error) {
 	return fmt.Sprintf("%s/", baseRoleARN[0]), nil
 }
 
-// normalizeRoleARN normalizes a role ARN by substituting special characters
-// with characters allowed for a RoleSessionName according to:
-// https://docs.aws.amazon.com/STS/latest/APIReference/API_AssumeRole.html
-func normalizeRoleARN(roleARN string) string {
-	roleARN = strings.Replace(roleARN, ":", "_", -1)
-	roleARN = strings.Replace(roleARN, "/", ".", -1)
-	return roleARN
+func hashRoleARN(roleARN string) string {
+	hash := md5.Sum([]byte(roleARN))
+	return hex.EncodeToString(hash[:])
 }
