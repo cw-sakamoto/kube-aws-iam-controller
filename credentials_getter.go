@@ -95,6 +95,8 @@ func GetBaseRoleARN(sess *session.Session) (string, error) {
 }
 
 func hashRoleARN(roleARN string) string {
-	hash := md5.Sum([]byte(roleARN))
+	// session name is must unique
+	t := time.Now().Format(time.RFC3339Nano)
+	hash := md5.Sum([]byte(roleARN + t))
 	return hex.EncodeToString(hash[:])
 }
